@@ -1,7 +1,4 @@
-function dynamicCommunicators(NN,TT)
-    pb = 0.25
-    cb = 1
-    cr = 4
+function dynamicCommunicators(NN=40,TT=365,pb=0.501,cb=1,cr=4)
     imp = [e^x for x in 1:NN]
     AA = zeros(NN,NN,TT)
     #init Data
