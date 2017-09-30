@@ -39,6 +39,9 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.501,cb=1,cr=4)
         end
                 
     end
-    print(AA)
+
+    #now get the total out degree of the nodes
+    outDegVec = sum(sum(rr,3),2)
+    AA
 
 end
