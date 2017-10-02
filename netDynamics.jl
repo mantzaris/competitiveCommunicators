@@ -30,7 +30,7 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.501,cb=1,cr=4)
             r_nDenominator = 1 + (imp[end] * sum(msgsTo_ii))
             r_next = r_nNumerator / r_nDenominator
             if(r_next > rand(1)[1])#if so generate cr links
-                println("response")
+                #println("response")
                 tmp = deleteat!(collect(1:NN),ii)
                 destinationNodes = tmp[randperm(length(tmp))[1:cr]]
                 AA[ii,destinationNodes,tt+1] = 1
@@ -41,7 +41,31 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.501,cb=1,cr=4)
     end
 
     #now get the total out degree of the nodes
-    outDegVec = sum(sum(rr,3),2)
-    AA
+    outDegVec = sum(sum(AA,3),2)
+    
 
+    daynorm = zeros(TT,1);#spectrum of eigenvalues
+    for ii in 1:TT
+        Atemp = AA[:,:,ii]
+        daynorm[ii] = findmax(abs(eigvals(Atemp)))[1]
+    end
+    
+    #compute the alpha to the value we want to compute B
+    alpha = 0.9*(1/findmax(daynorm)[1]);#90percent of the max
+    print(alpha)
+    #alpha = 0.25;
+
+    BB = eye(NN,NN);
+
+    for k = TT:-1:1
+        Aday = AA[:,:,k]
+        BB = (eye(NN,NN) - alpha*Aday)\BB
+        BB = abs(BB)
+        BB = BB/norm(BB)
+
+    end
+    #sum across columns
+    Cbroad = sum(BB',2)
+    
+    return Cbroad
 end
