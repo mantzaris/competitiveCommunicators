@@ -1,3 +1,4 @@
+using Plots
 function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     imp = [x^4 for x in 1:NN]
     println(imp)
@@ -17,7 +18,7 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
         #Basal Loop
         for ii in 1:NN
             if(rand(1)[1] < pb)
-                print("basal")
+                #print("basal")
                 tmp = deleteat!(collect(1:NN),ii)
                 destinationN = tmp[rand(1:end)]            
                 AA[ii,destinationN,tt+1] = 1
@@ -33,9 +34,9 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
             r_nNumerator = totalImportance
             r_nDenominator = 1 + (findmax(imp)[1] * sum(msgsTo_ii))
             r_next = r_nNumerator / r_nDenominator
-            println(r_next)
+            #println(r_next)
             if(r_next >  rand(1)[1])#if so generate cr links
-                print("response=");print(find(totalImportance));println(":")
+                #print("response=");print(find(totalImportance));println(":")
                 # println(msgsTo_ii)
                 tmp = deleteat!(collect(1:NN),ii)
                 destinationNodes = tmp[randperm(length(tmp))[1:cr]]
@@ -47,20 +48,33 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     end
     #print(AA)
     #now get the total out degree of the nodes
+    degOut = totalOut(AA,NN)
+    println("degOut")
+    print(degOut)
+    Cbroad = dynamicCentrality(AA,NN,TT)
+    labels = [string(x) for x in 1:NN]
+    
+    scatter(degOut,Cbroad,markersize=1,series_annotations =labels)# string.(1:NN))
+    
+end
+
+
+function totalOut(AA,NN)
+    coltmp = zeros(NN,1)
     outDegVec = sum(sum(AA,3),2)
-    dynamicCentrality(AA,NN,TT)
+    coltmp[:] = outDegVec[:]
+    return coltmp
 end
 
 
 
 function dynamicCentrality(AA,NN,TT)
     println(":")
-    daynorm = zeros(TT,1);#spectrum of eigenvalues
+    daynorm = zeros(TT,1);
     for ii in 1:TT
         Atemp = AA[:,:,ii]
         daynorm[ii] = findmax(abs(eigvals(Atemp)))[1]
     end    
-    #compute the alpha to the value we want to compute B
     #alpha = 0.9*(1/findmax(daynorm)[1]);#90percent of the max
     #println(alpha)
     alpha = 0.65;
@@ -68,7 +82,7 @@ function dynamicCentrality(AA,NN,TT)
     BB = eye(NN,NN);
     for kk = 1:TT#:-1:1
         Aday = AA[:,:,kk]
-        println(Aday)
+        #println(Aday)
         BBtmp = inv(eye(NN,NN) - alpha*Aday)#\BB
         #BBtmp = (eye(NN,NN) - alpha*Aday) \ BB
         BBtmp = abs(BBtmp)
@@ -77,8 +91,9 @@ function dynamicCentrality(AA,NN,TT)
     end
     #sum across columns
     Cbroad = sum(BB',2)    
-    println(Cbroad)
-    println(0.9*(1/findmax(daynorm)[1]))
+    #println(Cbroad)
+    #println(0.9*(1/findmax(daynorm)[1]))
+    return Cbroad
 end
 
 
