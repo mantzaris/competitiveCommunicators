@@ -1,4 +1,21 @@
 using Plots
+
+function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
+    
+    AA = dynamicCommunicators(NN,TT,pb,cb,cr)
+    degOut = totalOut(AA,NN)
+    println("degOut")
+    print(degOut)
+    Cbroad = dynamicCentrality(AA,NN,TT)
+    labels = [string(x) for x in 1:NN]
+    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
+    xlabel!("total deg out")
+    ylabel!("broadcast centrality")
+
+    
+end
+
+
 function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     imp = [x^4 for x in 1:NN]
     println(imp)
@@ -45,16 +62,8 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
         end
                 
     end
-    #print(AA)
-    #now get the total out degree of the nodes
-    degOut = totalOut(AA,NN)
-    println("degOut")
-    print(degOut)
-    Cbroad = dynamicCentrality(AA,NN,TT)
-    labels = [string(x) for x in 1:NN]
-    
-    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
-    
+        
+    return AA
 end
 
 
@@ -64,7 +73,6 @@ function totalOut(AA,NN)
     coltmp[:] = outDegVec[:]
     return coltmp
 end
-
 
 
 function dynamicCentrality(AA,NN,TT)
