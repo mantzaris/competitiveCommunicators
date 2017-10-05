@@ -12,7 +12,6 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
         end
 
     end
-    #produce the data
     #produce the Basal rate in the matrix
     for tt in 1:(TT-1)
         #Basal Loop
@@ -54,7 +53,7 @@ function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     Cbroad = dynamicCentrality(AA,NN,TT)
     labels = [string(x) for x in 1:NN]
     
-    scatter(degOut,Cbroad,markersize=1,series_annotations =labels)# string.(1:NN))
+    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
     
 end
 
