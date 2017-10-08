@@ -1,17 +1,30 @@
 using Plots
-
+#pyplot()
 function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     
     AA = dynamicCommunicators(NN,TT,pb,cb,cr)
     degOut = totalOut(AA,NN)
-    println("degOut")
-    print(degOut)
     Cbroad = dynamicCentrality(AA,NN,TT)
+
+    AA2 = ringNet()
+    degOut = totalOut(AA2,21)
+    Cbroad = dynamicCentrality(AA2,21,3)
+    scatterPlot(AA2,size(AA2)[1],degOut,Cbroad)
+end
+
+
+function scatterPlot(AA,NN,degOut,Cbroad)
     labels = [string(x) for x in 1:NN]
     scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
     xlabel!("total deg out")
     ylabel!("broadcast centrality")
+    title!(string("node num=",NN))
+    
+end
 
+
+
+function ringNet()
     AA2 = zeros(21,21,3)
     AA2[1,7,1] =1;AA2[7,1,1] =1;AA2[2,7,1] =1;AA2[7,2,1] =1;
     AA2[21,20,1] =1;AA2[20,21,1] =1;AA2[21,19,1] =1;AA2[19,21,1] =1;
@@ -22,15 +35,7 @@ function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     AA2[18,15,3]=1;AA2[15,18,3]=1;AA2[18,14,3]=1;AA2[14,18,3]=1;
     AA2[17,14,3]=1;AA2[14,17,3]=1;AA2[17,13,3]=1;AA2[13,17,3]=1;
     AA2[16,13,3]=1;AA2[13,16,3]=1;AA2[16,12,3]=1;AA2[12,16,3]=1;
-    degOut = totalOut(AA2,21)
-    println("degOut")
-    print(degOut)
-    Cbroad = dynamicCentrality(AA2,21,3)
-    labels = [string(x) for x in 1:21]
-    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
-    xlabel!("total deg out")
-    ylabel!("broadcast centrality")
-    title!("21 ring net")
+    return AA2
 end
 
 
