@@ -12,7 +12,25 @@ function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
     xlabel!("total deg out")
     ylabel!("broadcast centrality")
 
-    
+    AA2 = zeros(21,21,3)
+    AA2[1,7,1] =1;AA2[7,1,1] =1;AA2[2,7,1] =1;AA2[7,2,1] =1;
+    AA2[21,20,1] =1;AA2[20,21,1] =1;AA2[21,19,1] =1;AA2[19,21,1] =1;
+    AA2[2,8,2]=1;AA2[8,2,2]=1;AA2[3,8,2]=1;AA2[8,3,2]=1;
+    AA2[20,18,2]=1;AA2[18,20,2]=1;AA2[20,17,2]=1;AA2[17,20,2]=1;
+    AA2[19,16,2]=1;AA2[16,19,2]=1;
+    AA2[4,10,3]=1;AA2[10,4,3]=1;AA2[5,10,3]=1;AA2[10,5,3]=1;
+    AA2[18,15,3]=1;AA2[15,18,3]=1;AA2[18,14,3]=1;AA2[14,18,3]=1;
+    AA2[17,14,3]=1;AA2[14,17,3]=1;AA2[17,13,3]=1;AA2[13,17,3]=1;
+    AA2[16,13,3]=1;AA2[13,16,3]=1;AA2[16,12,3]=1;AA2[12,16,3]=1;
+    degOut = totalOut(AA2,21)
+    println("degOut")
+    print(degOut)
+    Cbroad = dynamicCentrality(AA2,21,3)
+    labels = [string(x) for x in 1:21]
+    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
+    xlabel!("total deg out")
+    ylabel!("broadcast centrality")
+    title!("21 ring net")
 end
 
 
@@ -87,7 +105,7 @@ function dynamicCentrality(AA,NN,TT)
     alpha = 0.65;
 
     BB = eye(NN,NN);
-    for kk = 1:TT#:-1:1
+    for kk = TT:-1:1
         Aday = AA[:,:,kk]
         #println(Aday)
         BBtmp = inv(eye(NN,NN) - alpha*Aday)#\BB
