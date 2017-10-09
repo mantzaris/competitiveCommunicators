@@ -1,15 +1,16 @@
 using Plots
 #pyplot()
-function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
+function main(NN=40,TT=3650,pb=0.01,cb=1,cr=4)
     
     AA = dynamicCommunicators(NN,TT,pb,cb,cr)
     degOut = totalOut(AA,NN)
     Cbroad = dynamicCentrality(AA,NN,TT)
+    scatterPlot(AA,size(AA)[1],degOut,Cbroad)
 
-    AA2 = ringNet()
-    degOut = totalOut(AA2,21)
-    Cbroad = dynamicCentrality(AA2,21,3)
-    scatterPlot(AA2,size(AA2)[1],degOut,Cbroad)
+   # AA2 = ringNet()
+   # degOut = totalOut(AA2,21)
+   # Cbroad = dynamicCentrality(AA2,21,3)
+   # scatterPlot(AA2,size(AA2)[1],degOut,Cbroad)
 end
 
 
@@ -40,7 +41,7 @@ end
 
 
 function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
-    imp = [x^4 for x in 1:NN]
+    imp = [e^x for x in 1:NN]
     println(imp)
     AA = zeros(NN,NN,TT)
     #init Data
@@ -108,7 +109,6 @@ function dynamicCentrality(AA,NN,TT)
     #alpha = 0.9*(1/findmax(daynorm)[1]);#90percent of the max
     #println(alpha)
     alpha = 0.65;
-
     BB = eye(NN,NN);
     for kk = TT:-1:1
         Aday = AA[:,:,kk]
@@ -121,15 +121,6 @@ function dynamicCentrality(AA,NN,TT)
     end
     #sum across columns
     Cbroad = sum(BB',2)    
-    #println(Cbroad)
-    #println(0.9*(1/findmax(daynorm)[1]))
     return Cbroad
 end
 
-
-#for k = size(Atensor,3):-1:1,
-#    Aday = Atensor(:,:,k);
-#    B = (eye(size(Atensor,1),size(Atensor,1)) - alpha*Aday)\B;
-#    B = abs(B);
-#    B = B/norm(B);
-#end
