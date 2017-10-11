@@ -1,5 +1,5 @@
 using Plots
-#pyplot()
+
 function main(NN=40,TT=3650,pb=0.01,cb=1,cr=4)
     
     AA = dynamicCommunicators(NN,TT,pb,cb,cr)
@@ -40,48 +40,51 @@ function ringNet()
 end
 
 
-function dynamicCommunicators(NN=40,TT=365,pb=0.1,cb=1,cr=4)
+function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
     imp = [e^x for x in 1:NN]
+     
     println(imp)
     AA = zeros(NN,NN,TT)
-    #init Data
+    #INIT DATA>>
     for ii in 1:NN
-        if(rand(1)[1] < pb)
+        if(rand(1)[1] <= pb)
             tmp = deleteat!(collect(1:NN),ii)
             destinationN = tmp[rand(1:end)]            
             AA[ii,destinationN,1] = 1
         end
 
     end
-    #produce the Basal rate in the matrix
-    for tt in 1:(TT-1)
-        #Basal Loop
+    #DATA LOOP: 1st put basal edges into <present> / 2nd put response from past to now
+    for tt in 2:(TT)
+        #BASAL LOOP
         for ii in 1:NN
-            if(rand(1)[1] < pb)
-                #print("basal")
+            if(rand(1)[1] <= pb)
                 tmp = deleteat!(collect(1:NN),ii)
                 destinationN = tmp[rand(1:end)]            
-                AA[ii,destinationN,tt+1] = 1
+                AA[ii,destinationN,tt] = 1#FIRE NOW
             end
 
         end
-        #Response Loop
+        #RESPONSE LOOP
         for ii in 1:NN
-            msgsTo_ii = AA[:,ii,tt]
-            
-            totalImportance = sum(msgsTo_ii .* imp)
-            
-            r_nNumerator = totalImportance
-            r_nDenominator = 1 + (findmax(imp)[1] * sum(msgsTo_ii))
-            r_next = r_nNumerator / r_nDenominator
-            #println(r_next)
-            if(r_next >  rand(1)[1])#if so generate cr links
-                #print("response=");print(find(totalImportance));println(":")
-                # println(msgsTo_ii)
-                tmp = deleteat!(collect(1:NN),ii)
-                destinationNodes = tmp[randperm(length(tmp))[1:cr]]
-                AA[ii,destinationNodes,tt+1] = 1
+            msgsTo_ii = AA[:,ii,tt-1]#RESPOND TO PREVIOUS STATE (tt-1)
+            #totalImportance = sum(msgsTo_ii' .* imp)
+            if(sum(AA[:,ii,tt-1]) >= 1)
+                println(sum(msgsTo_ii .* imp  ))
+                println((msgsTo_ii .* imp  ))                            
+                totalImportance = sum( msgsTo_ii .* imp  )
+                r_nNumerator = totalImportance
+                r_nDenominator = 1 + (findmax(imp)[1] * sum(AA[:,ii,tt-1]))
+                println( r_nNumerator / r_nDenominator )
+                r_next = r_nNumerator / r_nDenominator
 
+                if(r_next >  rand(1)[1])#if so generate cr links
+
+                    tmp = deleteat!(collect(1:NN),ii)
+                    destinationNodes = tmp[randperm(length(tmp))[1:cr]]
+                    #AA[ii,destinationNodes,tt] = 1#FIRE NOW
+
+               end
             end
         end
                 
