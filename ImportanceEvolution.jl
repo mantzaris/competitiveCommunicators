@@ -1,27 +1,32 @@
 using Gadfly
-function main(NN=40,TT=3650,pb=0.4,cb=3,cr=10)
-    
+
+function main(NN=40,TT=30,pb=0.01,cb=1,cr=4)
+
     AA = dynamicCommunicators(NN,TT,pb,cb,cr)
     degOut = totalOut(AA,NN)
     Cbroad = dynamicCentrality(AA,NN,TT)
-    println(Cbroad')
     scatterPlot(AA,size(AA)[1],degOut,Cbroad)
-
    # AA2 = ringNet()
    # degOut = totalOut(AA2,21)
    # Cbroad = dynamicCentrality(AA2,21,3)
-   # scatterPlot(AA2,size(AA2)[1],degOut,Cbroad)
+   # scatterPlot(AA2,size(AA2)[1],degOut,Cbroad, imp)
 end
 
 
 function scatterPlot(AA,NN,degOut,Cbroad)
+    #Seperate Plot for me because only Gadfly works
     labels = [string(x) for x in 1:NN]
     plot(x = degOut, y = Cbroad, label = labels, Geom.label)
-   # xlabel!("total deg out")
-   # ylabel!("broadcast centrality")
-   # title!(string("node num=",NN))
+
+  #  labels = [string(x) for x in 1:NN]
+  #  scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
+  #  xlabel!("total deg out")
+  #  ylabel!("broadcast centrality")
+  #  title!(string("node num=",NN))
     
 end
+
+
 
 function ringNet()
     AA2 = zeros(21,21,3)
@@ -38,59 +43,73 @@ function ringNet()
 end
 
 
-function dynamicCommunicators(NN=40,TT=365,pb=0.01,cb=1,cr=4)
-    imp = ([e^x for x in 1:NN] .* ones(NN,NN))';
-   # println("imp = ", imp)
-
+function dynamicCommunicators(NN=40,TT=100,pb=0.01,cb=1,cr=4)
     AA = zeros(NN,NN,TT)
-    #init Data
+    imp = rand(1:NN^3, NN)
+    impinitial = imp
+    println("Imp Initial = ", imp)
+    #INIT DATA>>
     for ii in 1:NN
-        if(rand(1)[1] < pb)
+        if(rand(1)[1] <= pb)
             tmp = deleteat!(collect(1:NN),ii)
             destinationN = tmp[rand(1:end)]            
             AA[ii,destinationN,1] = 1
         end
 
     end
-
-    # Change importance, produce basal, and generate response
-    for tt in 1:(TT-1)
-	#alter importance based on current matrix state before generating new
- 	for ii in 1:NN
-	    for jj in 1:NN
-	        if(AA[ii,jj,tt] == 0)
-		    imp[ii,jj]*=.95;
-		end
-	    end
-	end
-	#println("imp = ", imp)
-        #Basal Loop
+    #DATA LOOP: Adjust importance 1st, then put basal edges into <present> and put response from past to now
+    for tt in 2:(TT)
+	println("Stage : ", tt)
+	#IMPORTANCE CHANGE LOOP - No reason to lower importance due to no messages recieved in this model.
+#	for ii in 1:NN
+#	    decay = NN - (sum(AA[:,ii,tt-1]))
+#	    imp[ii] -= (2*decay);
+#	end
+	println("IMP = ", imp)
+        #BASAL LOOP
         for ii in 1:NN
-            if(rand(1)[1] < pb)
-                #print("basal")
+            if(rand(1)[1] <= pb)
                 tmp = deleteat!(collect(1:NN),ii)
                 destinationN = tmp[rand(1:end)]            
-                AA[ii,destinationN,tt+1] = 1
+                AA[ii,destinationN,tt] = 1#FIRE NOW
             end
 
         end
-        #Response Loop
+        #RESPONSE LOOP
         for ii in 1:NN
-            msgsTo_ii = AA[:,ii,tt]
-            totalImportance = sum(msgsTo_ii .* collect(imp[ii,:]))
-            
-            r_nNumerator = totalImportance
-            r_nDenominator = 1 + (maximum(imp[ii,:]) * sum(msgsTo_ii))
-            r_next = r_nNumerator / r_nDenominator
-            if(r_next >  rand(1)[1])#if so generate cr links
-                tmp = deleteat!(collect(1:NN),ii)
-                destinationNodes = tmp[randperm(length(tmp))[1:cr]]
-                AA[ii,destinationNodes,tt+1] = 1
+            msgsTo_ii = AA[:,ii,tt-1]#RESPOND TO PREVIOUS STATE (tt-1)
+            #totalImportance = sum(msgsTo_ii' .* imp)
+            if(sum(AA[:,ii,tt-1]) >= 1)
+               # println(sum(msgsTo_ii .* imp  ))
+               # println((msgsTo_ii .* imp  ))                            
+                totalImportance = sum( msgsTo_ii .* imp  )
+                r_nNumerator = totalImportance
+                r_nDenominator = 1 + (findmax(imp)[1] * sum(AA[:,ii,tt-1]))
+             #   println("r_num = ", r_nNumerator / r_nDenominator )
+                r_next = r_nNumerator / r_nDenominator
 
+                if(r_next >  rand(1)[1])#if so generate cr links
+
+                    tmp = deleteat!(collect(1:NN),ii)
+                    destinationNodes = tmp[randperm(length(tmp))[1:cr]]
+                    AA[ii,destinationNodes,tt] = 1#FIRE NOW
+
+	        else # If a message was not sent in response, reduce the importance of each node that contributed to sending the message.
+
+		    imp = ((-50*msgsTo_ii) + imp);
+
+                end
             end
         end
-	#println(AA[:,:,tt])    
+	println()
+	println()
+	println() 
     end
+
+    for ii in 1:NN
+	println(ii, " impinitial = ",impinitial[ii], "   difference = ", impinitial[ii]-imp[ii], "\n\n")
+    end
+
     return AA
 end
 
