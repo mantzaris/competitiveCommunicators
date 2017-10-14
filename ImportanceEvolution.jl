@@ -1,6 +1,7 @@
-using Gadfly
+using Plots
+gr()
 
-function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
+function main(NN=40,TT=3999,pb=0.01,cb=1,cr=4)
     
     AA = dynamicCommunicators(NN,TT,pb,cb,cr)
     degOut = totalOut(AA,NN)
@@ -16,7 +17,11 @@ end
 
 function scatterPlot(AA,NN,degOut,Cbroad)
     labels = [string(x) for x in 1:NN]
-    plot(x = degOut,y = Cbroad,label = labels, Geom.label)
+    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
+    xlabel!("total deg out")
+    ylabel!("broadcast centrality")
+    title!(string("node num=",NN))
+    
 end
 
 
@@ -37,9 +42,9 @@ end
 
 
 function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
-    imp = [x^4 for x in 1:NN]
- #  imp[NN] = 100;
-    initial_imp = imp 
+    imp = [e^x for x in 1:NN]
+  #  imp[NN] = 100; 
+    initial_imp = imp;
     println(imp)
     AA = zeros(NN,NN,TT)
     #INIT DATA>>
@@ -49,7 +54,7 @@ function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
             destinationN = tmp[rand(1:end)]            
             AA[ii,destinationN,1] = 1
         end
-	println(AA[:,:,1])
+
     end
     #DATA LOOP: 1st put basal edges into <present> / 2nd put response from past to now
     for tt in 2:(TT)
@@ -67,12 +72,12 @@ function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
             msgsTo_ii = AA[:,ii,tt-1]#RESPOND TO PREVIOUS STATE (tt-1)
             #totalImportance = sum(msgsTo_ii' .* imp)
             if(sum(AA[:,ii,tt-1]) >= 1)
-             #   println(sum(msgsTo_ii .* imp  ))
-             #   println((msgsTo_ii .* imp  ))                            
+            #   println(sum(msgsTo_ii .* imp  ))
+            #   println((msgsTo_ii .* imp  ))                            
                 totalImportance = sum( msgsTo_ii .* imp  )
                 r_nNumerator = totalImportance
                 r_nDenominator = 1 + (findmax(imp)[1] * sum(AA[:,ii,tt-1]))
-                println("prob of response = ", r_nNumerator / r_nDenominator )
+            #   println( r_nNumerator / r_nDenominator )
                 r_next = r_nNumerator / r_nDenominator
 
                 if(r_next >  rand(1)[1])#if so generate cr links
@@ -80,17 +85,16 @@ function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
                     tmp = deleteat!(collect(1:NN),ii)
                     destinationNodes = tmp[randperm(length(tmp))[1:cr]]
                     AA[ii,destinationNodes,tt] = 1#FIRE NOW
-		    imp = (imp += .1*msgsTo_ii);  #Increase successful nodes importance by .1
+		    imp = (20.*msgsTo_ii + imp)
 
                end
             end
         end
-       #  println(AA[:,:,tt], "\n")
-	# println("Imp = ", imp, "\n")       
+                
     end
     for ii in 1:NN
-	println(ii, " initial_imp = ",initial_imp[ii], "   final_imp = ", imp[ii], " Responses generated = ", 10*(imp[ii]-initial_imp[ii]), "\n\n")
-    end    
+	println("Initial Importance[ii] = ", initial_imp[ii], " Final Importance[ii] = ", imp[ii], " Growth = ", imp[ii]-initial_imp[ii])
+    end     
     return AA
 end
 
@@ -127,4 +131,3 @@ function dynamicCentrality(AA,NN,TT)
     Cbroad = sum(BB',2)    
     return Cbroad
 end
-
