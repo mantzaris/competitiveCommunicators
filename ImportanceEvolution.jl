@@ -1,11 +1,60 @@
-using Gadfly
+using Plots
+using StatsBase
+gr()
 
-function main(NN=40,TT=365,pb=0.1,cb=1,cr=4)
-    
-    AA = dynamicCommunicators(NN,TT,pb,cb,cr)
+function main(NN=40,TT=3650,pb=0.01,cb=1,cr=4)
+    	
+     imp1 = ones(NN,1)*10; # Constant
+
+    # Extra Importantces for additional runs
+ #   imp2 = imp1;  
+ #   imp2[NN] += 90; #Constant with bigger final
+ #   imp3 = [x for x in 1:NN]  # Linear
+     imp4 = [e^x for x in 1:NN] # exponential
+ #   imp5 = rand(1:100, NN)
+ #   imp5[NN] = 1000
+ #   imp5[20] = 3150
+ #   imp5[35] = 3150
+ #   imp5[27] = 4200
+
+    names = ["ScatterPlots/All_10s_Imp_", "ScatterPlots/10s_with_one_100_", "ScatterPlots/Linear_Imp_", "ScatterPlots/Exponential_Imp_", "ScatterPlots/Random_Imp_1-100_One_1000_"]
+
+    # Exponential Importance Run
+    AA = dynamicCommunicators(NN,TT,pb,cb,cr,imp4,names[4])
     degOut = totalOut(AA,NN)
     Cbroad = dynamicCentrality(AA,NN,TT)
     scatterPlot(AA,size(AA)[1],degOut,Cbroad)
+    savefig("ScatterPlots/Exponential_Imp_Final")
+    
+
+    # Extra Calls for Extra Importance Functions
+  # 10s with one 100 Imp Run
+  #  AA = dynamicCommunicators(NN,TT,pb,cb,cr,imp2,names[2])
+  #  degOut = totalOut(AA,NN)
+  #  Cbroad = dynamicCentrality(AA,NN,TT)
+  #  scatterPlot(AA,size(AA)[1],degOut,Cbroad)
+  #  savefig("ScatterPlots/10s_with_one_100_Final")
+    
+  # Linear Imp Run
+  #  AA = dynamicCommunicators(NN,TT,pb,cb,cr,imp3,names[3])
+  #  degOut = totalOut(AA,NN)
+  #  Cbroad = dynamicCentrality(AA,NN,TT)
+  #  scatterPlot(AA,size(AA)[1],degOut,Cbroad)
+  #  savefig("ScatterPlots/Linear_Imp_Final")
+
+  # Exponential Imp Run
+  #  AA = dynamicCommunicators(NN,TT,pb,cb,cr,imp4,names[4])
+  #  degOut = totalOut(AA,NN)
+  #  Cbroad = dynamicCentrality(AA,NN,TT)
+  #  scatterPlot(AA,size(AA)[1],degOut,Cbroad)
+  #  savefig("ScatterPlots/Exponential_Imp_Final")
+
+  # All random below 100 One 1000 Imp Run
+  #  AA = dynamicCommunicators(NN,TT,pb,cb,cr,imp5,names[5])
+  #  degOut = totalOut(AA,NN)
+  #  Cbroad = dynamicCentrality(AA,NN,TT)
+  #  scatterPlot(AA,size(AA)[1],degOut,Cbroad)
+  #  savefig("ScatterPlots/Random_Imp_1-100_One_1000_Final")
 
    # AA2 = ringNet()
    # degOut = totalOut(AA2,21)
@@ -16,7 +65,11 @@ end
 
 function scatterPlot(AA,NN,degOut,Cbroad)
     labels = [string(x) for x in 1:NN]
-    plot(x = degOut,y = Cbroad,label = labels, Geom.label)
+    scatter(degOut,Cbroad,markersize=1,series_annotations =labels,grid=false)
+    xlabel!("total deg out")
+    ylabel!("broadcast centrality")
+    title!(string("node num=",NN))
+    
 end
 
 
@@ -36,12 +89,12 @@ function ringNet()
 end
 
 
-function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
-    imp = [x^4 for x in 1:NN]
- #  imp[NN] = 100;
-    initial_imp = imp 
-    println(imp)
+function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4, imp = [x for x in 1:NN], name = "null")
+    initial_imp = imp; # Capture Initial Importance
+    midpoint_imp = ones(NN,1) # Initialize Midpoint
     AA = zeros(NN,NN,TT)
+    i=1;
+    n = .01*findmax(imp)[1]; # Maximum importance 1% of maximum for adding on successful responses
     #INIT DATA>>
     for ii in 1:NN
         if(rand(1)[1] <= pb)
@@ -49,10 +102,20 @@ function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
             destinationN = tmp[rand(1:end)]            
             AA[ii,destinationN,1] = 1
         end
-	println(AA[:,:,1])
     end
     #DATA LOOP: 1st put basal edges into <present> / 2nd put response from past to now
     for tt in 2:(TT)
+	if(tt%850 == 0) # Print Scatter plot 4 times evenly spaced
+	    degOut = totalOut(AA,NN);
+    	    Cbroad = dynamicCentrality(AA,NN,TT);
+            scatterPlot(AA,size(AA)[1],degOut,Cbroad);
+            savefig(string(name,(string(i))));
+	    i+=1;
+        end
+	if(tt == (3650/2)) # grab importance halfway through
+	    println("it worked")
+     	    midpoint_imp = imp;
+	end
         #BASAL LOOP
         for ii in 1:NN
             if(rand(1)[1] <= pb)
@@ -67,30 +130,31 @@ function dynamicCommunicators(NN=40,TT=50,pb=0.01,cb=1,cr=4)
             msgsTo_ii = AA[:,ii,tt-1]#RESPOND TO PREVIOUS STATE (tt-1)
             #totalImportance = sum(msgsTo_ii' .* imp)
             if(sum(AA[:,ii,tt-1]) >= 1)
-             #   println(sum(msgsTo_ii .* imp  ))
-             #   println((msgsTo_ii .* imp  ))                            
-                totalImportance = sum( msgsTo_ii .* imp  )
+            #   println(sum(msgsTo_ii .* imp  ))
+            #   println((msgsTo_ii .* imp  ))                            
+                totalImportance = sum( msgsTo_ii .* imp)
                 r_nNumerator = totalImportance
                 r_nDenominator = 1 + (findmax(imp)[1] * sum(AA[:,ii,tt-1]))
-                println("prob of response = ", r_nNumerator / r_nDenominator )
+            #   println( r_nNumerator / r_nDenominator )
                 r_next = r_nNumerator / r_nDenominator
 
                 if(r_next >  rand(1)[1])#if so generate cr links
 
                     tmp = deleteat!(collect(1:NN),ii)
                     destinationNodes = tmp[randperm(length(tmp))[1:cr]]
-                    AA[ii,destinationNodes,tt] = 1#FIRE NOW
-		    imp = (imp += .1*msgsTo_ii);  #Increase successful nodes importance by .1
+                    #AA[ii,destinationNodes,tt] = 1#FIRE NOW
+		    imp = (n*msgsTo_ii + imp) # Add 1% of the maximum importance to each imp of each node that triggered successful response
 
                end
             end
         end
-       #  println(AA[:,:,tt], "\n")
-	# println("Imp = ", imp, "\n")       
+                
     end
     for ii in 1:NN
-	println(ii, " initial_imp = ",initial_imp[ii], "   final_imp = ", imp[ii], " Responses generated = ", 10*(imp[ii]-initial_imp[ii]), "\n\n")
-    end    
+	println(ii, " Initial Importance[ii] = ", initial_imp[ii], " Final Importance[ii] = ", imp[ii], " Growth = ", imp[ii]-initial_imp[ii], " Responses Generated = ", (1/n)*(imp[ii]-initial_imp[ii]))
+    end  
+    println("Spearman Correlation Initial -> Mid = ", corspearman(initial_imp, midpoint_imp), " initial -> final = ", corspearman(initial_imp, imp)) 
+    println("Kendall Correlation Initial -> Mid = ", corspearman(initial_imp, midpoint_imp), " initial -> final = ", corspearman(initial_imp, imp)) 
     return AA
 end
 
@@ -125,6 +189,6 @@ function dynamicCentrality(AA,NN,TT)
     end
     #sum across columns
     Cbroad = sum(BB',2)    
-    return Cbroad
+return Cbroad
 end
 
