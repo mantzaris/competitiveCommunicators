@@ -2,14 +2,20 @@ using Plots
 using StatsBase
 gr()
 
-function mainAlex(NN=20,TT=36500,pb=0.01,cb=1,cr=4)
-    
-    filename = "ScatterPlots/x2ImportTest_";
-    AA = dynamicCommunicators(NN,TT,pb,cb,cr,filename)
+function mainAlex(NN=20,TT=8000,pb=0.01,cb=1,cr=4)
+    Ratios = Array(Float64,8,NN)
+    Importances = Array(Float64,8,NN)
+    filename = "ScatterPlots/x3ImportTest_";
+    AA = dynamicCommunicators(NN,TT,pb,cb,cr,filename,Ratios,Importances)
     degOut = totalOut(AA,NN)
     Cbroad = dynamicCentrality(AA,NN,TT)
     scatterPlot(AA,size(AA)[1],degOut,Cbroad)
-    savefig("ScatterPlots/x2ImportTest_Final");
+    savefig("ScatterPlots/x3ImportTest_Final");
+    TimeSeries(Ratios,1);
+    savefig("ScatterPlots/Cbroad_Evolving")
+    TimeSeries(Importances, 0);
+    savefig("ScatterPlots/Importance_Evolving")
+    
 
    # AA2 = ringNet()
    # degOut = totalOut(AA2,21)
@@ -27,6 +33,19 @@ function scatterPlot(AA,NN,degOut,Cbroad)
     
 end
 
+function TimeSeries(Ratios, n)
+    theme(:dark)
+    plot(Ratios, label = [string("Node ", x) for x in 1:20])
+    if(n == 1)
+    	xlabel!("Time")
+    	ylabel!("Responses Triggered")
+    else
+	xlabel!("Time")
+    	ylabel!("Importance")
+    end
+    	title!(string("Number of Nodes = 20"))
+
+end
 
 
 function ringNet()
@@ -44,8 +63,8 @@ function ringNet()
 end
 
 
-function dynamicCommunicators(NN,TT,pb,cb,cr,filename)
-    imp = [(x^3) for x in 1:NN]
+function dynamicCommunicators(NN,TT,pb,cb,cr,filename,Ratios,Importances)
+    imp = [x^3 for x in 1:NN]
     initial_imp = imp;
     midpoint_imp = ones(NN,1)
     i = 1;
@@ -66,11 +85,13 @@ function dynamicCommunicators(NN,TT,pb,cb,cr,filename)
 	if(tt == (TT/2))
 	    midpoint_imp = imp
 	end
-	if(tt%(TT/4) == 0) # Print Scatter plot 4 times evenly spaced
+	if(tt%(TT/8) == 0) # Print Scatter plot 4 times evenly spaced
 	    degOut = totalOut(AA,NN);
-    	    Cbroad = dynamicCentrality(AA,NN,TT);
+    	    Cbroad = dynamicCentrality(AA,NN,tt);
             scatterPlot(AA,size(AA)[1],degOut,Cbroad);
             savefig(string(filename,(string(i))));
+	    Ratios[i,:] = (.2*(imp-initial_imp));
+            Importances[i,:] = (imp-initial_imp)
 	    i+=1;
         end
         #BASAL LOOP
@@ -109,7 +130,7 @@ function dynamicCommunicators(NN,TT,pb,cb,cr,filename)
                 
     end
     for ii in 1:NN
-	println(ii, " Initial Importance[ii] = ", initial_imp[ii], " Final Importance[ii] = ", imp[ii], " Growth = ", imp[ii]-initial_imp[ii], 		" Responses Generated = ", (.1)*(imp[ii]-initial_imp[ii]))
+	println(ii, " Initial Importance[ii] = ", initial_imp[ii], " Final Importance[ii] = ", imp[ii], " Growth = ", imp[ii]-initial_imp[ii], 		" Responses Generated = ", (.2)*(imp[ii]-initial_imp[ii]))
     end  
     println("Spearman Correlation Initial -> Mid = ", corspearman(initial_imp, midpoint_imp), " initial -> final = ", corspearman(initial_imp, 	   imp)) 
     println("Kendall Correlation Initial -> Mid = ", corspearman(initial_imp, midpoint_imp), " initial -> final = ", corspearman(initial_imp, imp))     
