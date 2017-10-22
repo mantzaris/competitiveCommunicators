@@ -32,7 +32,7 @@ function scatterPlot(AA,NN,degOut,Cbroad)
     title!(string("node num=",NN))
     
 end
-
+ 
 function TimeSeries(Ratios, n)
     theme(:dark)
     plot(Ratios, label = [string("Node ", x) for x in 1:20])
